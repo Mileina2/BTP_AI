@@ -7,10 +7,10 @@ services:
   - type: web
     name: btpia-api
     runtime: node
-    region: frankfurt
+    region: oregon
     plan: free
     rootDir: back
-    buildCommand: npm install && npx prisma generate && node scripts/deploy-init.mjs
+    buildCommand: npm install && npx prisma generate
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
@@ -18,6 +18,8 @@ services:
         value: production
       - key: PORT
         value: "4000"
+      - key: TRUST_PROXY
+        value: "true"
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET
@@ -55,4 +57,4 @@ services:
       - key: CLOUDINARY_API_SECRET
         sync: false
       - key: RUN_SEED
-        value: "true"
+        value: "false"

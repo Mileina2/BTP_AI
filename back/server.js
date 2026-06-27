@@ -54,6 +54,17 @@ if (process.env.TRUST_PROXY) {
 }
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// Healthcheck public (avant rate limit + HTTPS strict)
+app.get("/api/health", (_req, res) => {
+  const storage = getStorageInfo();
+  res.json({
+    status: "ok",
+    uptime: process.uptime(),
+    timestamp: new Date(),
+    storage: { mode: storage.mode, label: storage.label },
+  });
+});
+
 app.use(requireHttps);
 
 app.use(
@@ -86,17 +97,6 @@ app.use("/api", apiRateLimiter);
 
 // Médias locaux protégés par jeton signé (pas de listing public)
 app.use("/api/media", mediaRoutes);
-
-// Healthcheck public
-app.get("/api/health", (_req, res) => {
-  const storage = getStorageInfo();
-  res.json({
-    status: "ok",
-    uptime: process.uptime(),
-    timestamp: new Date(),
-    storage: { mode: storage.mode, label: storage.label },
-  });
-});
 
 app.get("/", (_req, res) => {
   res.send("🚀 BTP IA — ERP API opérationnelle (PostgreSQL)");
