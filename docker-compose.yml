@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: btpia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: btpia
+      POSTGRES_PASSWORD: btpia_dev
+      POSTGRES_DB: btpia
+    ports:
+      - "15432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

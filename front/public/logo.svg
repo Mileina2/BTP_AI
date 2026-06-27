@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="BTP IA">
+  <circle cx="256" cy="256" r="248" fill="#FFFFFF"/>
+  <path fill="#F5C518" d="M256 88c-6 0-12 4-15 10L92 338c-10 15 2 34 19 34h290c17 0 29-19 19-34L271 98c-3-6-9-10-15-10z"/>
+  <g fill="#111111" transform="translate(0 8)">
+    <rect x="238" y="168" width="18" height="118" rx="2"/>
+    <path d="M148 286h216v14H148z"/>
+    <rect x="148" y="248" width="52" height="38" rx="3"/>
+    <path d="M256 168h92v12h-92z"/>
+    <path d="M336 180v18l28 8v-26z"/>
+    <path d="M348 206v74h10V206z"/>
+    <path d="M352 278c0 4 3 8 8 8h6c4 0 8-4 8-8v-2h-22v2z"/>
+    <path d="M360 286v24c0 3 2 6 5 6h4c3 0 5-3 5-6v-24h-14z"/>
+  </g>
+</svg>

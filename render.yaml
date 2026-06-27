@@ -1,0 +1,58 @@
+# Blueprint Render — API BTP IA
+# 1. Créez une base PostgreSQL sur https://neon.tech (gratuit)
+# 2. Render Dashboard → New → Blueprint → connectez ce repo GitHub
+# 3. Renseignez les variables marquées sync: false
+
+services:
+  - type: web
+    name: btpia-api
+    runtime: node
+    region: frankfurt
+    plan: free
+    rootDir: back
+    buildCommand: npm install && npx prisma generate && node scripts/deploy-init.mjs
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4000"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: FRONTEND_URL
+        sync: false
+      - key: API_PUBLIC_URL
+        sync: false
+      - key: FORCE_HTTPS
+        value: "true"
+      - key: ASSISTANT_ENABLED
+        value: "false"
+      - key: SMTP_HOST
+        value: smtp-relay.brevo.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_SECURE
+        value: "false"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: RUN_SEED
+        value: "true"

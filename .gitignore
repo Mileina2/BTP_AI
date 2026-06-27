@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+
+# Secrets — ne jamais committer
+.env
+.env.local
+.env.*.local
+back/.env
+front/.env
+front/.env.production
+chantierIAapp/.env
+
+# Build
+front/dist/
+dist-ssr/
+chantierIAapp/dist-check/
+chantierIAapp/dist/
+
+# Binaires / artefacts locaux
+bin/
+back/devis_*.pdf
+back/uploads/
+
+# Logs & OS
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Expo
+chantierIAapp/.expo/
+
+# Prisma
+back/prisma/*.db
+back/prisma/*.db-journal
+
+# Vercel
+.vercel/
+
+# Installateurs / artefacts Windows locaux
+*.exe
+*.msi
+InstallationLog.txt
+Licenses/
+.docker-local/
+components.xml
+
+# PDF locaux générés
+back/api-devis.pdf
+back/devis_*.pdf

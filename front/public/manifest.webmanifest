@@ -1,0 +1,19 @@
+{
+  "name": "BTP IA — Gestion chantier",
+  "short_name": "BTP IA",
+  "description": "ERP BTP — chantiers, trésorerie, conformité OHADA",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FFFFFF",
+  "theme_color": "#F5C518",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,965 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────
+
+enum UserRole {
+  ENTREPRENEUR
+  CHEF_CHANTIER
+  CLIENT
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIF
+  INACTIF
+}
+
+enum ClientType {
+  PARTICULIER
+  ENTREPRISE
+}
+
+enum ClientRelation {
+  PROSPECT
+  ACTIF
+  INACTIF
+  VIP
+}
+
+enum ChantierStatut {
+  EN_PREPARATION
+  EN_COURS
+  TERMINE
+  SUSPENDU
+}
+
+enum TypeTravaux {
+  CONSTRUCTION
+  RENOVATION
+  AMENAGEMENT
+  INFRASTRUCTURE
+  AUTRE
+}
+
+enum DevisStatut {
+  EN_ATTENTE
+  ENVOYE
+  ACCEPTE
+  REFUSE
+}
+
+enum DevisAnnexeType {
+  PLAN
+  DPGF
+  AUTRE
+}
+
+enum FactureStatut {
+  BROUILLON
+  ENVOYEE
+  PARTIELLEMENT_PAYEE
+  PAYEE
+  IMPAYEE
+  ANNULEE
+}
+
+enum AvoirStatut {
+  BROUILLON
+  EMIS
+  APPLIQUE
+}
+
+enum FactureType {
+  INTEGRALE
+  ACOMPTE
+  SOLDE
+}
+
+enum ModePaiement {
+  ESPECES
+  VIREMENT
+  CHEQUE
+  MOBILE_MONEY
+}
+
+enum JournalComptable {
+  VT
+  AC
+  BQ
+  CA
+  MM
+  OD
+  AN
+}
+
+enum EcritureSource {
+  MANUEL
+  FACTURE
+  PAIEMENT
+  DEPENSE
+  AVOIR
+}
+
+enum EngagementStatut {
+  DEVIS
+  COMMANDE
+  LIVRE
+  PAYE
+  ANNULE
+}
+
+enum ConformiteType {
+  CNPS
+  DGI_TVA
+  ASSURANCE_RC
+  ASSURANCE_DECENNALE
+  RCCM
+  RETENUE_GARANTIE
+  AUTRE
+}
+
+enum ConformiteStatut {
+  A_VENIR
+  FAIT
+  EN_RETARD
+}
+
+enum EquipeStatut {
+  ACTIF
+  INACTIF
+  ARCHIVE
+}
+
+enum TypeContrat {
+  CDI
+  CDD
+  JOURNALIER
+  SOUS_TRAITANT
+}
+
+enum StockCategorie {
+  MATERIAUX
+  OUTILS
+  CARBURANT
+  EQUIPEMENT
+  CONSOMMABLE
+  AUTRE
+}
+
+enum StockEtat {
+  OK
+  ALERTE
+  RUPTURE
+}
+
+enum MouvementType {
+  ENTREE
+  SORTIE
+}
+
+enum AlertPriorite {
+  BASSE
+  MOYENNE
+  HAUTE
+  CRITIQUE
+}
+
+enum AlertType {
+  FACTURE_IMPAYEE
+  STOCK_BAS
+  BUDGET_DEPASSE
+  DEVIS_A_ENVOYER
+  TRESORERIE
+  CHANTIER_RETARD
+  DEMANDE_MATERIEL
+  AUTRE
+}
+
+enum DemandeStatut {
+  EN_ATTENTE
+  VALIDEE
+  REFUSEE
+  LIVREE
+}
+
+enum DemandeUrgence {
+  BASSE
+  MOYENNE
+  HAUTE
+}
+
+// ─── ORGANISATION & UTILISATEURS ─────────────────────────
+
+model Organization {
+  id        String   @id @default(cuid())
+  nom       String
+  adresse   String?
+  ville     String?
+  pays      String   @default("Côte d'Ivoire")
+  logoUrl   String?
+  telephone          String?
+  email              String?
+  rccm               String?
+  compteContribuable String?
+  banque             String?
+  rib                String?
+  assuranceRc        String?
+  assuranceDecennale String?
+  signataireNom      String?
+  signataireFonction String?
+  formeJuridique     String?
+  capitalSocial      String?
+  devise             String   @default("XOF")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  avoirs    Avoir[]
+  clients   Client[]
+  chantiers Chantier[]
+  devis     Devis[]
+  factures  Facture[]
+  prestations PrestationCatalog[]
+  depenses  Depense[]
+  equipes   EquipeMember[]
+  stocks    StockArticle[]
+  alertes   Alert[]
+  rapports  RapportJournalier[]
+  demandes  DemandeMateriel[]
+  timeline  ChantierTimelineEntry[]
+  documents ChantierDocument[]
+  devisAnnexes DevisAnnexe[]
+  auditLogs AuditLog[]
+  comptesComptables CompteComptable[]
+  ecrituresComptables EcritureComptable[]
+  fournisseurs Fournisseur[]
+  engagementsFournisseur EngagementFournisseur[]
+  echeancesConformite EcheanceConformite[]
+}
+
+model User {
+  id                   String     @id @default(cuid())
+  organizationId       String
+  nom                  String
+  prenom               String
+  email                String     @unique
+  motDePasse           String?
+  telephone            String?
+  role                 UserRole   @default(ENTREPRENEUR)
+  statut               UserStatus @default(ACTIF)
+  emailVerifiedAt      DateTime?
+  verifyToken          String?
+  verifyTokenExpire    DateTime?
+  googleId             String?    @unique
+  resetToken           String?
+  resetTokenExpire     DateTime?
+  refreshTokenHash     String?
+  refreshTokenExpire   DateTime?
+  twoFactorEnabled     Boolean    @default(false)
+  twoFactorOtpHash     String?
+  twoFactorOtpExpire   DateTime?
+  derniereConnexion    DateTime?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clientsCreated       Client[]     @relation("ClientOwner")
+  chantiersManaged     Chantier[]   @relation("ChantierOwner")
+  chantiersAssigned    Chantier[]   @relation("ChefChantier")
+  clientProfile        Client?      @relation("ClientUser")
+  rapports             RapportJournalier[]
+  demandes             DemandeMateriel[]
+  alertes              Alert[]
+  timelineEntries      ChantierTimelineEntry[]
+  documentsUploaded    ChantierDocument[]
+  auditLogs            AuditLog[]
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+// ─── COMMERCIAL ──────────────────────────────────────────
+
+model Client {
+  id               String         @id @default(cuid())
+  organizationId   String
+  ownerId          String
+  nom              String
+  email            String?
+  telephone        String
+  adresse          String?
+  pays             String         @default("Côte d'Ivoire")
+  type             ClientType     @default(PARTICULIER)
+  secteurActivite  String?
+  statutRelation   ClientRelation @default(PROSPECT)
+  notes            String?
+  userId           String?        @unique
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner        User         @relation("ClientOwner", fields: [ownerId], references: [id])
+  portalUser   User?        @relation("ClientUser", fields: [userId], references: [id])
+  chantiers    Chantier[]
+  devis        Devis[]
+  factures     Facture[]
+
+  @@index([organizationId])
+  @@index([ownerId])
+}
+
+model Chantier {
+  id                   String         @id @default(cuid())
+  organizationId       String
+  ownerId              String
+  clientId             String?
+  chefChantierId       String?
+  nom                  String
+  description          String?
+  adresse              String?
+  ville                String?
+  pays                 String         @default("Côte d'Ivoire")
+  zone                 String?
+  latitude             Float?
+  longitude            Float?
+  typeTravaux          TypeTravaux    @default(CONSTRUCTION)
+  entreprisePartenaire String?
+  surfaceTotale        Float?
+  budget               Float          @default(0)
+  depenses             Float          @default(0)
+  avancementPhysique   Float          @default(0)
+  avancementFinancier  Float          @default(0)
+  dateDebut            DateTime       @default(now())
+  dateFin              DateTime?
+  statut               ChantierStatut @default(EN_PREPARATION)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  organization Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner        User                    @relation("ChantierOwner", fields: [ownerId], references: [id])
+  client       Client?                 @relation(fields: [clientId], references: [id])
+  chefChantier User?                   @relation("ChefChantier", fields: [chefChantierId], references: [id])
+  devis        Devis[]
+  factures     Facture[]
+  depenseItems Depense[]
+  equipes      EquipeMember[]
+  stocks       StockArticle[]
+  rapports     RapportJournalier[]
+  demandes     DemandeMateriel[]
+  timeline     ChantierTimelineEntry[]
+  documents    ChantierDocument[]
+  alertes      Alert[]
+  engagements  EngagementFournisseur[]
+  echeancesConformite EcheanceConformite[]
+
+  @@index([organizationId])
+  @@index([ownerId])
+  @@index([clientId])
+}
+
+model Devis {
+  id             String      @id @default(cuid())
+  organizationId String
+  clientId       String
+  chantierId     String?
+  parentDevisId  String?
+  version        Int         @default(1)
+  numero         String      @unique
+  description    String?
+  conditions     String?
+  validite       Int         @default(30)
+  tva            Float       @default(18)
+  remisePercent      Float       @default(0)
+  acomptePercent     Float       @default(30)
+  delaiExecution     String?
+  retenueGarantie    Float       @default(0)
+  referenceInterne   String?
+  montantHT      Float       @default(0)
+  montantTVA     Float       @default(0)
+  montantTTC     Float       @default(0)
+  statut         DevisStatut @default(EN_ATTENTE)
+  signataireNom      String?
+  signataireFonction String?
+  signatureData      String?
+  clientAccepteNom   String?
+  clientAccepteLe    DateTime?
+  clientSignatureData String?
+  indexationActive    Boolean   @default(false)
+  indexationReference String?
+  indexationDateBase  DateTime?
+  indexationTauxMax   Float     @default(5)
+  indexationClause    String?
+  planningDebut       DateTime?
+  planningFin         DateTime?
+  dateEmission   DateTime    @default(now())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id])
+  chantier     Chantier?    @relation(fields: [chantierId], references: [id])
+  parentDevis  Devis?       @relation("DevisVersions", fields: [parentDevisId], references: [id], onDelete: SetNull)
+  versions     Devis[]      @relation("DevisVersions")
+  lignes       DevisLigne[]
+  annexes      DevisAnnexe[]
+  planningTaches DevisPlanningTache[]
+  factures     Facture[]
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([parentDevisId])
+}
+
+model PrestationCatalog {
+  id             String   @id @default(cuid())
+  organizationId String
+  designation    String
+  unite          String   @default("u")
+  prixUnitaire   Float    @default(0)
+  categorie      String?
+  ordre          Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model DevisLigne {
+  id           String @id @default(cuid())
+  devisId      String
+  section      String @default("Général")
+  reference          String?
+  designation        String
+  detailDescription  String?
+  quantite           Float   @default(1)
+  unite              String  @default("u")
+  prixUnitaire       Float   @default(0)
+  tva                Float   @default(18)
+  isOption           Boolean @default(false)
+  ordre              Int     @default(0)
+
+  devis Devis @relation(fields: [devisId], references: [id], onDelete: Cascade)
+}
+
+model DevisAnnexe {
+  id             String          @id @default(cuid())
+  organizationId String
+  devisId        String
+  nom            String
+  url            String
+  mimeType       String?
+  taille         Int?
+  storage        String          @default("local")
+  publicId       String?
+  type           DevisAnnexeType @default(PLAN)
+  ordre          Int             @default(0)
+  createdAt      DateTime        @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  devis        Devis        @relation(fields: [devisId], references: [id], onDelete: Cascade)
+
+  @@index([devisId])
+  @@index([organizationId])
+}
+
+model DevisPlanningTache {
+  id          String   @id @default(cuid())
+  devisId     String
+  libelle     String
+  section     String   @default("Général")
+  dateDebut   DateTime
+  dateFin     DateTime
+  ordre       Int      @default(0)
+  progression Float    @default(0)
+
+  devis Devis @relation(fields: [devisId], references: [id], onDelete: Cascade)
+
+  @@index([devisId])
+}
+
+model Facture {
+  id             String        @id @default(cuid())
+  organizationId String
+  clientId       String
+  chantierId     String?
+  devisId        String?
+  numero         String        @unique
+  description    String?
+  conditions     String?
+  referenceDevis String?
+  remisePercent      Float         @default(0)
+  retenueGarantie    Float         @default(0)
+  referenceInterne   String?
+  typeFacture        FactureType   @default(INTEGRALE)
+  verrouillee        Boolean       @default(false)
+  montantVerse       Float         @default(0)
+  montantAvoir       Float         @default(0)
+  acompteDeduit      Float         @default(0)
+  montantHT      Float         @default(0)
+  montantTVA     Float         @default(0)
+  tva            Float         @default(18)
+  montantTTC     Float         @default(0)
+  statut         FactureStatut @default(BROUILLON)
+  dateEmission   DateTime      @default(now())
+  dateEcheance   DateTime?
+  datePaiement   DateTime?
+  dateDerniereRelance DateTime?
+  nombreRelances Int           @default(0)
+  modePaiement   ModePaiement?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id])
+  chantier     Chantier?    @relation(fields: [chantierId], references: [id])
+  devis        Devis?       @relation(fields: [devisId], references: [id])
+  lignes       FactureLigne[]
+  paiements    FacturePaiement[]
+  avoirs       Avoir[]
+
+  @@index([organizationId])
+  @@index([statut])
+  @@index([clientId])
+}
+
+model FacturePaiement {
+  id           String        @id @default(cuid())
+  factureId    String
+  montant      Float
+  datePaiement DateTime      @default(now())
+  modePaiement ModePaiement?
+  reference    String?
+  commentaire  String?
+  createdAt    DateTime      @default(now())
+
+  facture Facture @relation(fields: [factureId], references: [id], onDelete: Cascade)
+
+  @@index([factureId])
+}
+
+model Avoir {
+  id             String      @id @default(cuid())
+  organizationId String
+  factureId      String
+  numero         String      @unique
+  motif          String?
+  montantHT      Float       @default(0)
+  montantTVA     Float       @default(0)
+  montantTTC     Float       @default(0)
+  statut         AvoirStatut @default(EMIS)
+  dateEmission   DateTime    @default(now())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  facture      Facture      @relation(fields: [factureId], references: [id], onDelete: Cascade)
+  lignes       AvoirLigne[]
+
+  @@index([organizationId])
+  @@index([factureId])
+}
+
+model AvoirLigne {
+  id           String @id @default(cuid())
+  avoirId      String
+  designation  String
+  quantite     Float  @default(1)
+  prixUnitaire Float  @default(0)
+  tva          Float  @default(18)
+  ordre        Int    @default(0)
+
+  avoir Avoir @relation(fields: [avoirId], references: [id], onDelete: Cascade)
+}
+
+model FactureLigne {
+  id           String @id @default(cuid())
+  factureId    String
+  section      String @default("Général")
+  reference          String?
+  designation        String
+  detailDescription  String?
+  quantite           Float  @default(1)
+  unite              String @default("u")
+  prixUnitaire       Float  @default(0)
+  tva                Float  @default(18)
+  ordre              Int    @default(0)
+
+  facture Facture @relation(fields: [factureId], references: [id], onDelete: Cascade)
+}
+
+// ─── COMPTABILITÉ SYSCOHADA (OHADA / Afrique) ────────────
+
+model CompteComptable {
+  id             String  @id @default(cuid())
+  organizationId String
+  numero         String
+  libelle        String
+  classe         Int
+  typeCompte     String
+  actif          Boolean @default(true)
+  systeme        Boolean @default(false)
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lignes       EcritureLigne[]
+
+  @@unique([organizationId, numero])
+  @@index([organizationId, classe])
+}
+
+model EcritureComptable {
+  id             String           @id @default(cuid())
+  organizationId String
+  journal        JournalComptable
+  numero         String
+  dateEcriture   DateTime
+  libelle        String
+  reference      String?
+  sourceType     EcritureSource   @default(MANUEL)
+  sourceKey      String?
+  exercice       Int
+  verrouillee    Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lignes       EcritureLigne[]
+
+  @@unique([organizationId, sourceKey])
+  @@unique([organizationId, numero])
+  @@index([organizationId, exercice])
+  @@index([organizationId, journal])
+}
+
+model EcritureLigne {
+  id         String  @id @default(cuid())
+  ecritureId String
+  compteId   String
+  debit      Float   @default(0)
+  credit     Float   @default(0)
+  libelle    String?
+
+  ecriture EcritureComptable @relation(fields: [ecritureId], references: [id], onDelete: Cascade)
+  compte   CompteComptable   @relation(fields: [compteId], references: [id])
+
+  @@index([ecritureId])
+  @@index([compteId])
+}
+
+// ─── FINANCES ────────────────────────────────────────────
+
+model Depense {
+  id             String   @id @default(cuid())
+  organizationId String
+  chantierId     String
+  fournisseurId  String?
+  libelle        String
+  categorie      String   @default("Autre")
+  quantite       Float    @default(1)
+  unite          String   @default("u")
+  prixUnitaire   Float    @default(0)
+  montant        Float    @default(0)
+  fournisseur    String?
+  paye           Boolean  @default(false)
+  dateEcheance   DateTime?
+  date           DateTime @default(now())
+  commentaire    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chantier     Chantier     @relation(fields: [chantierId], references: [id], onDelete: Cascade)
+  fournisseurRef Fournisseur? @relation(fields: [fournisseurId], references: [id])
+
+  @@index([organizationId])
+  @@index([chantierId])
+  @@index([fournisseurId])
+}
+
+model Fournisseur {
+  id             String   @id @default(cuid())
+  organizationId String
+  nom            String
+  contact        String?
+  telephone      String?
+  email          String?
+  adresse        String?
+  rccm           String?
+  categorie      String   @default("Sous-traitance")
+  notes          String?
+  actif          Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  engagements  EngagementFournisseur[]
+  depenses     Depense[]
+
+  @@index([organizationId])
+}
+
+model EngagementFournisseur {
+  id             String           @id @default(cuid())
+  organizationId String
+  fournisseurId  String
+  chantierId     String?
+  numero         String
+  objet          String
+  montant        Float            @default(0)
+  tva            Float            @default(18)
+  montantTTC     Float            @default(0)
+  statut         EngagementStatut @default(DEVIS)
+  dateDevis      DateTime         @default(now())
+  dateEcheance   DateTime?
+  referenceDevis String?
+  depenseId      String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fournisseur  Fournisseur  @relation(fields: [fournisseurId], references: [id], onDelete: Cascade)
+  chantier     Chantier?    @relation(fields: [chantierId], references: [id])
+
+  @@unique([organizationId, numero])
+  @@index([organizationId])
+  @@index([fournisseurId])
+}
+
+model EcheanceConformite {
+  id             String           @id @default(cuid())
+  organizationId String
+  type           ConformiteType
+  libelle        String
+  dateEcheance   DateTime
+  montantEstime  Float?
+  chantierId     String?
+  factureId      String?
+  statut         ConformiteStatut @default(A_VENIR)
+  rappelJours    Int              @default(7)
+  notes          String?
+  recurrenceMois Int?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chantier     Chantier?    @relation(fields: [chantierId], references: [id])
+
+  @@index([organizationId])
+  @@index([dateEcheance])
+}
+
+// ─── RH & STOCK ──────────────────────────────────────────
+
+model EquipeMember {
+  id               String       @id @default(cuid())
+  organizationId   String
+  chantierId       String?
+  nom              String
+  role             String
+  typeContrat      TypeContrat  @default(JOURNALIER)
+  statut           EquipeStatut @default(ACTIF)
+  tauxHoraire      Float        @default(0)
+  heuresParJour    Float        @default(8)
+  joursParSemaine  Float        @default(5)
+  heuresMensuelles Float        @default(160)
+  prime            Float        @default(0)
+  bonus            Float        @default(0)
+  retenue          Float        @default(0)
+  salaireTotal     Float        @default(0)
+  dateEmbauche     DateTime     @default(now())
+  dateFinContrat   DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chantier     Chantier?    @relation(fields: [chantierId], references: [id])
+
+  @@index([organizationId])
+  @@index([chantierId])
+}
+
+model StockArticle {
+  id               String         @id @default(cuid())
+  organizationId   String
+  chantierId       String?
+  nom              String
+  categorie        StockCategorie @default(MATERIAUX)
+  reference        String?
+  unite            String         @default("unité")
+  quantiteActuelle Float          @default(0)
+  seuilAlerte      Float          @default(10)
+  prixUnitaire     Float          @default(0)
+  etat             StockEtat      @default(OK)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chantier     Chantier?       @relation(fields: [chantierId], references: [id])
+  mouvements   StockMouvement[]
+
+  @@index([organizationId])
+  @@index([chantierId])
+}
+
+model StockMouvement {
+  id        String        @id @default(cuid())
+  articleId String
+  type      MouvementType
+  quantite  Float
+  commentaire String?
+  date      DateTime      @default(now())
+
+  article StockArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+}
+
+// ─── TERRAIN & CLIENT ────────────────────────────────────
+
+model RapportJournalier {
+  id             String   @id @default(cuid())
+  organizationId String
+  chantierId     String
+  auteurId       String
+  date           DateTime @default(now())
+  ouvriersPresents Int    @default(0)
+  ouvriersAbsents  Int    @default(0)
+  avancement     Float    @default(0)
+  travauxRealises String?
+  incidents      String?
+  meteo          String?
+  notes          String?
+  photos         String[] @default([])
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chantier     Chantier     @relation(fields: [chantierId], references: [id], onDelete: Cascade)
+  auteur       User         @relation(fields: [auteurId], references: [id])
+
+  @@index([chantierId])
+  @@index([date])
+}
+
+model DemandeMateriel {
+  id             String         @id @default(cuid())
+  organizationId String
+  chantierId     String
+  demandeurId    String
+  designation    String
+  quantite       Float
+  unite          String         @default("unité")
+  urgence        DemandeUrgence @default(MOYENNE)
+  statut         DemandeStatut  @default(EN_ATTENTE)
+  commentaire    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chantier     Chantier     @relation(fields: [chantierId], references: [id], onDelete: Cascade)
+  demandeur    User         @relation(fields: [demandeurId], references: [id])
+
+  @@index([organizationId])
+  @@index([statut])
+}
+
+model ChantierTimelineEntry {
+  id             String   @id @default(cuid())
+  organizationId String
+  chantierId     String
+  auteurId       String?
+  type           String   @default("COMMENTAIRE")
+  titre          String
+  description    String?
+  jour           Int?
+  photos         String[] @default([])
+  visibleClient  Boolean  @default(true)
+  date           DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chantier     Chantier     @relation(fields: [chantierId], references: [id], onDelete: Cascade)
+  auteur       User?        @relation(fields: [auteurId], references: [id])
+
+  @@index([chantierId])
+  @@index([organizationId])
+}
+
+model ChantierDocument {
+  id             String   @id @default(cuid())
+  organizationId String
+  chantierId     String
+  uploadedById   String?
+  nom            String
+  url            String
+  mimeType       String?
+  taille         Int?
+  storage        String   @default("local")
+  publicId       String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chantier     Chantier     @relation(fields: [chantierId], references: [id], onDelete: Cascade)
+  uploadedBy   User?        @relation(fields: [uploadedById], references: [id])
+
+  @@index([chantierId])
+  @@index([organizationId])
+}
+
+// ─── PILOTAGE ERP ────────────────────────────────────────
+
+model Alert {
+  id             String        @id @default(cuid())
+  organizationId String
+  userId         String?
+  chantierId     String?
+  type           AlertType
+  priorite       AlertPriorite @default(MOYENNE)
+  titre          String
+  message        String
+  actionLabel    String?
+  actionUrl      String?
+  lu             Boolean       @default(false)
+  resolu         Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id])
+  chantier     Chantier?    @relation(fields: [chantierId], references: [id])
+
+  @@index([organizationId])
+  @@index([lu, resolu])
+}
+
+model DashboardSnapshot {
+  id             String   @id @default(cuid())
+  organizationId String
+  mois           Int
+  annee          Int
+  stats          Json
+  graphData      Json
+  warnings       Json
+  createdAt      DateTime @default(now())
+
+  @@unique([organizationId, mois, annee])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String?
+  action         String
+  entity         String
+  entityId       String?
+  details        String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([createdAt])
+}
