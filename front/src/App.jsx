@@ -23,6 +23,8 @@ import { CurrencyProvider } from "./context/CurrencyContext";
 import { navKeysForRole, defaultPageForRole, ROLE_LABELS } from "./config/navByRole";
 import BrandLogo from "./components/BrandLogo";
 import MobileBottomNav from "./components/MobileBottomNav";
+import AppTopNav from "./components/AppTopNav";
+import AppMenuOverlay from "./components/AppMenuOverlay";
 
 import {
   Home,
@@ -78,11 +80,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
   const userMenuRef = useRef(null);
 
   const resolvePageFromHash = (role = "ENTREPRENEUR") => {
@@ -97,7 +96,7 @@ export default function App() {
   const navigate = (pageId) => {
     window.location.hash = `/${pageId}`;
     setPage(pageId);
-    setShowSidebar(false);
+    setShowMenu(false);
   };
 
   useEffect(() => {
@@ -126,11 +125,11 @@ export default function App() {
   }, [darkMode]);
 
   useEffect(() => {
-    document.body.style.overflow = showSidebar && window.innerWidth < 768 ? "hidden" : "";
+    document.body.style.overflow = showMenu && window.innerWidth < 768 ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showSidebar]);
+  }, [showMenu]);
 
   useEffect(() => {
     if (!showUserMenu) return;
@@ -147,23 +146,13 @@ export default function App() {
     };
   }, [showUserMenu]);
 
-  const handleTouchStart = (e) => (touchStartX.current = e.touches[0].clientX);
-  const handleTouchMove = (e) => (touchEndX.current = e.touches[0].clientX);
-  const handleTouchEnd = () => {
-    const distance = touchEndX.current - touchStartX.current;
-    if (window.innerWidth < 768) {
-      if (distance > 80) setShowSidebar(true);
-      if (distance < -80) setShowSidebar(false);
-    }
-  };
-
   const handleLogout = async () => {
     setShowUserMenu(false);
     await apiLogout();
     setUser(null);
     setClients([]);
     setChantiers([]);
-    setShowSidebar(false);
+    setShowMenu(false);
     setIsAuthenticated(false);
     window.location.hash = "";
   };
@@ -281,71 +270,23 @@ export default function App() {
   return (
     <CurrencyProvider organization={user?.organization}>
     <div
-      className={`min-h-[100dvh] flex font-sans overflow-x-hidden app-shell-bg ${
+      className={`min-h-[100dvh] flex flex-col font-sans overflow-x-hidden app-shell-bg ${
         darkMode ? "dark text-gray-100" : "text-brand-ink"
       }`}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
-      {/* === Sidebar === */}
-      <aside
-        className={`fixed md:static top-0 left-0 h-[100dvh] md:h-full w-[min(85vw,280px)] md:w-64 app-sidebar flex flex-col shadow-xl transform transition-transform duration-300 z-40 ${
-          showSidebar ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        }`}
-      >
-        <div className="p-4 pt-[max(1rem,env(safe-area-inset-top))] flex-1 overflow-y-auto overscroll-contain">
-          <BrandLogo size="md" light showText className="mb-6 px-1" />
-          <nav className="space-y-1 pb-4">
-            {navItems.map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => navigate(key)}
-                className={`flex items-center w-full px-3 py-3 rounded-lg transition text-left text-sm touch-manipulation min-h-[44px] ${
-                  page === key ? "nav-item-active" : "nav-item-idle"
-                }`}
-              >
-                <Icon className="w-5 h-5 mr-2.5 shrink-0" />
-                {label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-white/10 shrink-0">
-          <button
-            onClick={handleLogout}
-            className="flex items-center justify-center gap-2 w-full bg-white/10 hover:bg-white/15 text-white py-3 rounded-lg transition text-sm font-medium touch-manipulation min-h-[44px]"
-          >
-            <LogOut className="w-5 h-5" /> Déconnexion
-          </button>
-        </div>
-      </aside>
-
-      {showSidebar && (
-        <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 md:hidden"
-          onClick={() => setShowSidebar(false)}
-        />
-      )}
-
-      {/* === Contenu principal === */}
       <div className="flex-1 flex flex-col w-full min-w-0">
         <div className="app-header-accent" />
         <header className="w-full flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 md:px-10 py-2.5 sm:py-3 app-header sticky top-0 z-20 pt-[max(0.5rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-3 min-w-0">
             <button
               className="md:hidden text-brand-ink dark:text-gray-200 shrink-0 p-2 -ml-2 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
-              onClick={() => setShowSidebar(!showSidebar)}
+              onClick={() => setShowMenu(true)}
               type="button"
               aria-label="Menu"
             >
               <Menu className="w-7 h-7" />
             </button>
-            <div className="md:hidden min-w-0">
-              <BrandLogo size="xs" showText />
-            </div>
+            <BrandLogo size="sm" showText className="min-w-0" />
           </div>
 
           <div className="flex items-center gap-4 ml-auto">
@@ -420,7 +361,8 @@ export default function App() {
           </div>
         </header>
 
-        {/* === Contenu dynamique === */}
+        <AppTopNav navItems={navItems} page={page} onNavigate={navigate} />
+
         <main className="flex-1 w-full min-w-0 px-4 sm:px-5 md:px-10 py-4 md:py-8 pb-24 md:pb-8">
           <div className="max-w-[1600px] mx-auto w-full">{renderPage()}</div>
         </main>
@@ -430,9 +372,18 @@ export default function App() {
           page={page}
           allowedKeys={navItems.map((i) => i.key)}
           onNavigate={navigate}
-          onOpenMenu={() => setShowSidebar(true)}
+          onOpenMenu={() => setShowMenu(true)}
         />
       </div>
+
+      <AppMenuOverlay
+        open={showMenu}
+        navItems={navItems}
+        page={page}
+        onNavigate={navigate}
+        onClose={() => setShowMenu(false)}
+        onLogout={handleLogout}
+      />
     </div>
     </CurrencyProvider>
   );
