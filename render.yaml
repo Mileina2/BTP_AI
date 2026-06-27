@@ -1,7 +1,5 @@
 # Blueprint Render — API BTP IA
-# 1. Créez une base PostgreSQL sur https://neon.tech (gratuit)
-# 2. Render Dashboard → New → Blueprint → connectez ce repo GitHub
-# 3. Renseignez les variables marquées sync: false
+# Repo: https://github.com/Mileina2/BTP_AI
 
 services:
   - type: web
@@ -24,16 +22,14 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
-      - key: JWT_REFRESH_SECRET
-        sync: false
       - key: JWT_EXPIRES_IN
         value: 15m
       - key: JWT_REFRESH_EXPIRES_IN
         value: 7d
       - key: FRONTEND_URL
-        sync: false
+        value: https://front-ruddy-pi.vercel.app
       - key: API_PUBLIC_URL
-        sync: false
+        value: https://btpia-api.onrender.com
       - key: FORCE_HTTPS
         value: "true"
       - key: ASSISTANT_ENABLED
@@ -50,11 +46,3 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
-      - key: CLOUDINARY_CLOUD_NAME
-        sync: false
-      - key: CLOUDINARY_API_KEY
-        sync: false
-      - key: CLOUDINARY_API_SECRET
-        sync: false
-      - key: RUN_SEED
-        value: "false"
