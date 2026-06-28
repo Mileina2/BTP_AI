@@ -17,3 +17,19 @@ export function getAllowedOrigins() {
     .forEach((o) => list.add(o));
   return [...list];
 }
+
+/** Autorise aussi les previews *.vercel.app en production (déploiements Vercel). */
+export function corsOriginCallback(origin, callback) {
+  if (!origin) return callback(null, true);
+  const allowed = getAllowedOrigins();
+  if (allowed.includes(origin)) return callback(null, true);
+  try {
+    const host = new URL(origin).hostname;
+    if (process.env.NODE_ENV === "production" && host.endsWith(".vercel.app")) {
+      return callback(null, true);
+    }
+  } catch {
+    /* ignore */
+  }
+  callback(null, false);
+}

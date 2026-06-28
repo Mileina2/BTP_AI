@@ -7,7 +7,7 @@ import morgan from "morgan";
 import helmet from "helmet";
 import compression from "compression";
 import { connectDatabase } from "./config/prisma.js";
-import { getAllowedOrigins } from "./config/cors.js";
+import { getAllowedOrigins, corsOriginCallback } from "./config/cors.js";
 import { assertSecurityConfig } from "./config/security.js";
 import { requireHttps } from "./middleware/httpsMiddleware.js";
 import { apiRateLimiter } from "./middleware/rateLimitMiddleware.js";
@@ -69,11 +69,7 @@ app.use(requireHttps);
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      const allowed = getAllowedOrigins();
-      if (!origin || allowed.includes(origin)) return callback(null, true);
-      callback(null, false);
-    },
+    origin: corsOriginCallback,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
