@@ -27,7 +27,7 @@ services:
       - key: JWT_REFRESH_EXPIRES_IN
         value: 7d
       - key: FRONTEND_URL
-        value: https://front-ruddy-pi.vercel.app
+        value: https://btp-ia.vercel.app
       - key: API_PUBLIC_URL
         value: https://btpia-api.onrender.com
       - key: FORCE_HTTPS
