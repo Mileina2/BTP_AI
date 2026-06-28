@@ -1,8 +1,6 @@
-const CACHE = "btpia-v23";
-const SHELL = ["/", "/index.html", "/manifest.webmanifest", "/vite.svg"];
+const CACHE = "btpia-v24";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
   self.skipWaiting();
 });
 
@@ -20,21 +18,43 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.pathname.startsWith("/api/")) return;
 
-  // Bundles Vite (hash) : toujours réseau pour voir les mises à jour UI
+  // JS/CSS Vite : toujours réseau (hash change à chaque deploy)
   if (url.pathname.startsWith("/assets/")) {
     event.respondWith(fetch(event.request));
     return;
   }
 
+  // HTML : réseau d'abord (évite écran blanc après deploy)
+  const isDocument =
+    event.request.mode === "navigate" ||
+    url.pathname === "/" ||
+    url.pathname === "/index.html";
+
+  if (isDocument) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match("/index.html"))
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        if (!response.ok || response.type === "opaque") return response;
-        const copy = response.clone();
-        caches.open(CACHE).then((cache) => cache.put(event.request, copy));
-        return response;
-      });
-    })
+    caches.match(event.request).then(
+      (cached) =>
+        cached ||
+        fetch(event.request).then((response) => {
+          if (!response.ok || response.type === "opaque") return response;
+          const copy = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+          return response;
+        })
+    )
   );
 });
