@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import api, { setSessionToken, logout } from "../lib/api";
+import api, { setSessionToken, logout, wakeApi, isTimeoutError } from "../lib/api";
 import { LOGIN_PROFILES, getLoginProfile, SHOW_DEMO_LOGIN } from "../config/loginProfiles";
 import GoogleSignInButton, { isGoogleAuthEnabled } from "../components/GoogleSignInButton";
 import { btnPrimaryFull, btnOutlineBrand } from "../lib/brand";
@@ -46,13 +46,20 @@ export default function Login({ onLogin }) {
   const [challengeToken, setChallengeToken] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [twoFAInfo, setTwoFAInfo] = useState("");
+  const [apiStatus, setApiStatus] = useState("checking"); // checking | ready | slow
 
   const profile = getLoginProfile(profileRole);
   const ProfileIcon = PROFILE_ICONS[profileRole] || Building2;
 
-  // Réveille l'API Render (plan gratuit ~30–60 s au 1er appel)
   useEffect(() => {
-    api.get("/health").catch(() => {});
+    let cancelled = false;
+    (async () => {
+      const ok = await wakeApi(90000);
+      if (!cancelled) setApiStatus(ok ? "ready" : "slow");
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -118,6 +125,26 @@ export default function Login({ onLogin }) {
     }
   };
 
+  const performLogin = async () => {
+    const res = await api.post("/auth/login", {
+      email: form.email,
+      motDePasse: form.motDePasse,
+    });
+    if (res.data?.requires2FA) {
+      setTwoFARequired(true);
+      setChallengeToken(res.data.challengeToken);
+      setTwoFAInfo(res.data.message || "Code envoyé par email.");
+      setOtpCode("");
+      return;
+    }
+    if (res.data?.token) {
+      setSessionToken(res.data.token, res.data.refreshToken);
+      onLogin();
+    } else {
+      throw new Error("Aucun token reçu du serveur");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -137,22 +164,18 @@ export default function Login({ onLogin }) {
         );
         setDevVerifyUrl(res.data?.devVerifyUrl || "");
       } else {
-        const res = await api.post("/auth/login", {
-          email: form.email,
-          motDePasse: form.motDePasse,
-        });
-        if (res.data?.requires2FA) {
-          setTwoFARequired(true);
-          setChallengeToken(res.data.challengeToken);
-          setTwoFAInfo(res.data.message || "Code envoyé par email.");
-          setOtpCode("");
-          return;
-        }
-        if (res.data?.token) {
-          setSessionToken(res.data.token, res.data.refreshToken);
-          onLogin();
-        } else {
-          throw new Error("Aucun token reçu du serveur");
+        try {
+          await performLogin();
+        } catch (firstErr) {
+          if (isTimeoutError(firstErr) || !firstErr.response) {
+            setApiStatus("checking");
+            const ok = await wakeApi(90000);
+            setApiStatus(ok ? "ready" : "slow");
+            if (ok) await performLogin();
+            else throw firstErr;
+          } else {
+            throw firstErr;
+          }
         }
       }
     } catch (err) {
@@ -161,13 +184,9 @@ export default function Login({ onLogin }) {
         setPendingVerification(true);
         setPendingEmail(data.email || form.email);
         setError(data.error || "Confirmez votre email avant de vous connecter.");
-      } else if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
+      } else if (isTimeoutError(err) || !err.response) {
         setError(
-          "L'API met du temps à démarrer (hébergement gratuit). Attendez 10 s et réessayez."
-        );
-      } else if (!err.response) {
-        setError(
-          "Impossible de joindre l'API. Vérifiez votre connexion ou réessayez dans 1 minute."
+          "Le serveur met encore du temps à répondre (hébergement gratuit). Patientez 1 minute puis réessayez."
         );
       } else {
         setError(data?.error || data?.message || "Erreur de connexion ou d'inscription");
@@ -222,6 +241,14 @@ export default function Login({ onLogin }) {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
             Choisissez votre type de connexion
           </p>
+          {apiStatus === "checking" && (
+            <p className="text-xs text-amber-700 dark:text-amber-400 mt-2 animate-pulse">
+              Réveil du serveur… (30–60 s la 1ère fois)
+            </p>
+          )}
+          {apiStatus === "ready" && (
+            <p className="text-xs text-green-700 dark:text-green-400 mt-2">Serveur prêt</p>
+          )}
         </div>
 
         {/* Sélecteur de profil */}

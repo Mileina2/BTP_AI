@@ -28,6 +28,25 @@ const api = axios.create({
 
 let refreshPromise = null;
 
+/** Réveille l'API Render (plan gratuit) — ping /health jusqu'à réponse ou timeout. */
+export async function wakeApi(maxWaitMs = 90000) {
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    try {
+      const res = await axios.get(`${BASE_URL}/health`, { timeout: 20000 });
+      if (res.data?.status === "ok") return true;
+    } catch {
+      /* serveur en cours de réveil */
+    }
+    await new Promise((r) => setTimeout(r, 2500));
+  }
+  return false;
+}
+
+function isTimeoutError(err) {
+  return err?.code === "ECONNABORTED" || err?.message?.includes("timeout");
+}
+
 async function refreshAccessToken() {
   const refresh = getRefreshToken();
   if (!refresh) throw new Error("Pas de refresh token");
@@ -172,4 +191,5 @@ export async function logout() {
   window.dispatchEvent(new CustomEvent("auth:logout"));
 }
 
+export { isTimeoutError };
 export default api;
