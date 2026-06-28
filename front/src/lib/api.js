@@ -22,7 +22,7 @@ function clearToken() {
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 20000,
+  timeout: 90000,
   headers: { "Content-Type": "application/json" },
 });
 

@@ -72,7 +72,7 @@ app.use(
     origin: (origin, callback) => {
       const allowed = getAllowedOrigins();
       if (!origin || allowed.includes(origin)) return callback(null, true);
-      callback(new Error("Origine non autorisée par CORS"));
+      callback(null, false);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],

@@ -5,6 +5,10 @@ export function getAllowedOrigins() {
     list.add("http://localhost:5173");
     list.add("http://localhost:4173");
   }
+  if (process.env.NODE_ENV === "production") {
+    list.add("https://btp-ia.vercel.app");
+    list.add("https://front-ruddy-pi.vercel.app");
+  }
   const extra = process.env.CORS_ORIGINS || "";
   extra
     .split(",")

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import api, { setSessionToken, logout } from "../lib/api";
 import { LOGIN_PROFILES, getLoginProfile, SHOW_DEMO_LOGIN } from "../config/loginProfiles";
 import GoogleSignInButton, { isGoogleAuthEnabled } from "../components/GoogleSignInButton";
@@ -49,6 +49,11 @@ export default function Login({ onLogin }) {
 
   const profile = getLoginProfile(profileRole);
   const ProfileIcon = PROFILE_ICONS[profileRole] || Building2;
+
+  // Réveille l'API Render (plan gratuit ~30–60 s au 1er appel)
+  useEffect(() => {
+    api.get("/health").catch(() => {});
+  }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -156,6 +161,14 @@ export default function Login({ onLogin }) {
         setPendingVerification(true);
         setPendingEmail(data.email || form.email);
         setError(data.error || "Confirmez votre email avant de vous connecter.");
+      } else if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
+        setError(
+          "L'API met du temps à démarrer (hébergement gratuit). Attendez 10 s et réessayez."
+        );
+      } else if (!err.response) {
+        setError(
+          "Impossible de joindre l'API. Vérifiez votre connexion ou réessayez dans 1 minute."
+        );
       } else {
         setError(data?.error || data?.message || "Erreur de connexion ou d'inscription");
       }
